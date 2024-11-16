@@ -28,3 +28,6 @@ Thumbs.db
 
 # Rustsrc
 srcrust/
+
+*.tgz
+*.tar.gz
