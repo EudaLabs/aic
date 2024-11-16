@@ -1,11 +1,13 @@
 {
-  "name": "aic",
+  "name": "@eudalabs/aic",
   "version": "1.0.1",
   "description": "AI-powered CLI tool for git commit summaries",
   "main": "dist/index.js",
   "bin": {
     "aic": "dist/index.js"
   },
+  "author": "byigitt",
+  "license": "MIT",
   "type": "commonjs",
   "scripts": {
     "build": "tsc",
@@ -36,5 +38,13 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
   }
 }
