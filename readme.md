@@ -4,24 +4,24 @@ AIC is a powerful CLI tool that leverages AI to help you create meaningful git c
 
 ## Features
 
-- 🤖 Multiple AI Provider Support (OpenAI, Claude, Groq, Phind, Ollama)
-- 📝 Generate Conventional Commit Messages
-- 🔍 Explain Code Changes
-- 🎯 Interactive Commit Browser
-- 💡 Context-Aware Suggestions
-- 🚀 Fast Local Processing (with Ollama)
+- Multiple AI Provider Support: OpenAI, Claude, Groq, Phind, and Ollama integration
+- Conventional Commit Message Generation
+- Code Change Analysis and Explanation
+- Interactive Commit History Browser
+- Intelligent Context-Based Suggestions 
+- High-Performance Local Processing via Ollama
 
 ## Installation
 
 ```bash
 # Using npm
-npm install -g aic
+npm install -g @eudalabs/aic
 
 # Using yarn
-yarn global add aic
+yarn global add @eudalabs/aic
 
 # Using pnpm
-pnpm add -g aic
+pnpm add -g @eudalabs/aic
 ```
 
 ## Usage
