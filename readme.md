@@ -101,7 +101,10 @@ aic --api-key your_key explain --diff
 
 - Node.js >= 18.0.0
 - Git
-- fzf (optional, for `list` command)
+- fzf (required for `list` command)
+  - Windows: Install via Chocolatey (`choco install fzf`)
+  - macOS: Install via Homebrew (`brew install fzf`)
+  - Linux: Use your package manager (`apt install fzf` or equivalent)
 - mdcat (optional, for better markdown rendering)
 - Ollama (optional, for local AI processing)
 
