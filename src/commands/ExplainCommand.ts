@@ -21,16 +21,20 @@ export class ExplainCommand implements Command {
     const spinnerText = this.query ? 'Generating answer...' : 'Generating summary...';
     const spinner = await createSpinner(spinnerText);
     spinner.start();
-    spinner.stop();
 
     try {
-      await provider.explain({
+      const result = await provider.explain({
         gitEntity: this.gitEntity,
         query: this.query
-      }, true);
-      console.log();
+      }, false);
+
+      spinner.succeed('Done');
+      console.log(`\n${result}`);
     } catch (error) {
-      console.error('\nFailed to generate explanation');
+      spinner.fail('Failed to generate explanation');
+      if (error instanceof Error) {
+        console.error('\nError:', error.message);
+      }
       throw error;
     }
   }
