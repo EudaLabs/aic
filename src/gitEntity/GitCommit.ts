@@ -127,7 +127,7 @@ export async function createGitCommit(sha: string): Promise<GitCommit> {
 
   const getDate = async (sha: string): Promise<string> => {
     const output = execSync(
-      `git log --format=%cd --date=format:%Y-%m-%d %H:%M:%S -n 1 ${sha}`,
+      `git show -s --format=%ci ${sha}`,
       { encoding: 'utf-8' }
     );
     return output.trim();
