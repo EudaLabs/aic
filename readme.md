@@ -4,12 +4,14 @@ AIC is a powerful CLI tool that leverages AI to help you create meaningful git c
 
 ## Features
 
-- Multiple AI Provider Support: OpenAI, Claude, Groq, Phind, and Ollama integration
-- Conventional Commit Message Generation
-- Code Change Analysis and Explanation
-- Interactive Commit History Browser
-- Intelligent Context-Based Suggestions 
-- High-Performance Local Processing via Ollama
+- 🤖 Multiple AI Provider Support: OpenAI, Claude, Groq, Phind, and Ollama integration
+- 📝 Conventional Commit Message Generation
+- 🔍 Code Change Analysis and Explanation
+- 🎯 Interactive Commit History Browser
+- 💡 Intelligent Context-Based Suggestions 
+- 🚀 High-Performance Local Processing via Ollama
+- ✨ Automatic Change Categorization and Batch Commits
+- 📋 Automatic Clipboard Support
 
 ## Installation
 
@@ -52,6 +54,16 @@ aic explain abc123f
 aic explain --diff --query "What files were modified?"
 ```
 
+### Batch Commit Changes
+
+```bash
+# Automatically categorize and commit changes
+aic batch
+
+# With specific provider
+aic --provider ollama --model qwen2.5-coder:7b batch
+```
+
 ### Browse and Explain Commits
 
 ```bash
@@ -85,6 +97,9 @@ aic --model gpt-4 explain --diff
 
 # Provide API key directly
 aic --api-key your_key explain --diff
+
+# Enable debug mode
+aic --debug batch
 ```
 
 ## Supported Providers
@@ -105,25 +120,45 @@ aic --api-key your_key explain --diff
   - Windows: Install via Chocolatey (`choco install fzf`)
   - macOS: Install via Homebrew (`brew install fzf`)
   - Linux: Use your package manager (`apt install fzf` or equivalent)
-- mdcat (optional, for better markdown rendering)
 - Ollama (optional, for local AI processing)
+
+## Features in Detail
+
+### Batch Commit
+The `batch` command automatically:
+- Analyzes all changes in your repository
+- Groups related files together
+- Generates appropriate commit messages for each group
+- Creates separate commits with proper conventional commit format
+- Handles complex changes intelligently
+
+### Smart Categorization
+Files are automatically grouped by:
+- API endpoints
+- Core services
+- AI providers
+- Type definitions
+- Configuration files
+- Documentation
+- And more...
 
 ## Technical Stack
 
 - TypeScript
 - Commander.js (CLI framework)
-- Ora (Elegant terminal spinners)
+- nanospinner (Elegant terminal spinners)
 - Various AI Provider APIs
 
 ## Error Handling
 
 AIC provides detailed error messages and hints:
-
-- Missing dependencies (e.g., fzf, mdcat)
+- Missing dependencies
 - Git repository issues
 - API authentication problems
 - Network connectivity issues
 - Invalid commit hashes
+- GPG signing issues
+- Provider-specific errors
 
 ## Contributing
 
@@ -141,3 +176,4 @@ MIT
 
 - Built with TypeScript and modern Node.js features
 - Uses various AI models for intelligent suggestions
+- Inspired by conventional commit standards
