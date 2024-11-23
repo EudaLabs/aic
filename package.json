@@ -1,10 +1,10 @@
 {
   "name": "@eudalabs/aic",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "AI-powered CLI tool for git commit summaries",
   "main": "dist/index.js",
   "bin": {
-    "aic": "dist/index.js"
+    "aic": "./dist/index.js"
   },
   "author": "byigitt",
   "license": "MIT",
@@ -16,7 +16,8 @@
     "lint": "eslint src/**/*.ts",
     "test": "jest",
     "clean": "rimraf dist",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "relink": "pnpm unlink -g && pnpm clean && pnpm build && pnpm link -g"
   },
   "dependencies": {
     "clipboardy": "^4.0.0",
