@@ -1,13 +1,21 @@
 import { Command, Option } from 'commander';
 import { AICProvider } from './providers';
 import type { ProviderType } from './providers/types';
-import type { ExplainOptions, DraftOptions, ListOptions, CommandContext } from './commands/types';
+import type { ExplainOptions, DraftOptions, ListOptions, CommandContext, BatchOptions } from './commands/types';
 import { GitCommit, createGitCommit } from './gitEntity/GitCommit';
 import { GitDiff } from './gitEntity/GitDiff';
 import { ExplainCommand } from './commands/ExplainCommand';
 import { ListCommand } from './commands/ListCommand';
 import { DraftCommand } from './commands/DraftCommand';
 import { AICError } from './errors/AICError';
+import { BatchCommand } from './commands/BatchCommand';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+// Read version from package.json
+const packageJson = JSON.parse(
+  readFileSync(join(__dirname, '..', 'package.json'), 'utf-8')
+);
 
 interface GlobalOptions {
   provider: ProviderType;
@@ -21,7 +29,7 @@ export function createCli(): Command {
   const program = new Command()
     .name('aic')
     .description('AI-powered CLI tool for git commit summaries')
-    .version('1.0.0');
+    .version(packageJson.version);
 
   program
     .addOption(new Option('-p, --provider <type>', 'AI provider to use').env('AIC_AI_PROVIDER').default('phind'))
@@ -117,6 +125,29 @@ export function createCli(): Command {
           data: new GitDiff(true)
         };
         await new DraftCommand(gitEntity, options.context).execute(provider, globalOpts.debug);
+      } catch (error) {
+        if (error instanceof AICError) {
+          console.error('Error:', error.message);
+        } else {
+          console.error('Unexpected error:', error);
+        }
+        process.exit(1);
+      }
+    });
+
+  program
+    .command('batch')
+    .description('Automatically categorize and commit changes in groups')
+    .action(async (options: BatchOptions, cmd: Command) => {
+      const globalOpts = program.opts() as GlobalOptions;
+      const provider = AICProvider.create(
+        globalOpts.provider as ProviderType,
+        globalOpts.apiKey,
+        globalOpts.model
+      );
+
+      try {
+        await new BatchCommand(provider, globalOpts.debug).execute();
       } catch (error) {
         if (error instanceof AICError) {
           console.error('Error:', error.message);
