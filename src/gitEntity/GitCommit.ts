@@ -62,7 +62,7 @@ export class GitCommit {
   private loadDiff(): string {
     try {
       const output = execSync(
-        `git diff-tree -p --binary --no-color --compact-summary ${this.hash}`,
+        `git -c core.autocrlf=false -c core.safecrlf=false diff-tree -p --binary --no-color --compact-summary ${this.hash}`,
         { encoding: 'utf-8' }
       );
       if (!output) {
@@ -87,7 +87,10 @@ ${this.message}`;
 export async function createGitCommit(sha: string): Promise<GitCommit> {
   const isValidCommit = async (sha: string): Promise<void> => {
     try {
-      const output = execSync(`git cat-file -t ${sha}`, { encoding: 'utf-8' });
+      const output = execSync(
+        `git -c core.autocrlf=false -c core.safecrlf=false cat-file -t ${sha}`,
+        { encoding: 'utf-8' }
+      );
       if (output.trim() !== 'commit') {
         throw new GitCommitError(sha);
       }
@@ -97,13 +100,16 @@ export async function createGitCommit(sha: string): Promise<GitCommit> {
   };
 
   const getFullHash = async (sha: string): Promise<string> => {
-    const output = execSync(`git rev-parse ${sha}`, { encoding: 'utf-8' });
+    const output = execSync(
+      `git -c core.autocrlf=false -c core.safecrlf=false rev-parse ${sha}`,
+      { encoding: 'utf-8' }
+    );
     return output.trim();
   };
 
   const getMessage = async (sha: string): Promise<string> => {
     const output = execSync(
-      `git log --format=%B -n 1 ${sha}`,
+      `git -c core.autocrlf=false -c core.safecrlf=false log --format=%B -n 1 ${sha}`,
       { encoding: 'utf-8' }
     );
     return output.trim();
@@ -111,7 +117,7 @@ export async function createGitCommit(sha: string): Promise<GitCommit> {
 
   const getAuthorName = async (sha: string): Promise<string> => {
     const output = execSync(
-      `git log --format=%an -n 1 ${sha}`,
+      `git -c core.autocrlf=false -c core.safecrlf=false log --format=%an -n 1 ${sha}`,
       { encoding: 'utf-8' }
     );
     return output.trim();
@@ -119,7 +125,7 @@ export async function createGitCommit(sha: string): Promise<GitCommit> {
 
   const getAuthorEmail = async (sha: string): Promise<string> => {
     const output = execSync(
-      `git log --format=%ae -n 1 ${sha}`,
+      `git -c core.autocrlf=false -c core.safecrlf=false log --format=%ae -n 1 ${sha}`,
       { encoding: 'utf-8' }
     );
     return output.trim();
@@ -127,7 +133,7 @@ export async function createGitCommit(sha: string): Promise<GitCommit> {
 
   const getDate = async (sha: string): Promise<string> => {
     const output = execSync(
-      `git show -s --format=%ci ${sha}`,
+      `git -c core.autocrlf=false -c core.safecrlf=false show -s --format=%ci ${sha}`,
       { encoding: 'utf-8' }
     );
     return output.trim();

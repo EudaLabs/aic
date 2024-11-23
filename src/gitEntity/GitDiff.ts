@@ -14,7 +14,10 @@ export class GitDiff {
     const args = staged ? ['diff', '--staged'] : ['diff'];
     
     try {
-      const diff = execSync(`git ${args.join(' ')}`, { encoding: 'utf-8' });
+      const diff = execSync(
+        `git -c core.autocrlf=false -c core.safecrlf=false ${args.join(' ')}`,
+        { encoding: 'utf-8' }
+      );
       if (!diff) {
         throw new GitDiffError(staged);
       }
