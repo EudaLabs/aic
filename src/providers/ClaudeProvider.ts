@@ -1,4 +1,4 @@
-import type { AIProvider } from './types';
+import type { AIProvider, ProviderType } from './types';
 import type { AIPrompt } from '../AIPrompt';
 import { ProviderError } from '../errors/AICError';
 
@@ -73,5 +73,9 @@ export class ClaudeProvider implements AIProvider {
     }
 
     return content;
+  }
+
+  getType(): ProviderType {
+    return 'claude';
   }
 } 

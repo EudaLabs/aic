@@ -1,6 +1,6 @@
-import type { AIProvider } from './types';
+import type { AIProvider, ProviderType } from './types';
 import type { AIPrompt } from '../AIPrompt';
-import { ProviderError } from '../errors/AICError';
+import { ProviderError, OllamaConnectionError } from '../errors/AICError';
 
 interface OllamaResponse {
   response?: string;
@@ -35,57 +35,70 @@ export class OllamaProvider implements AIProvider {
       max_tokens: this.config.maxTokens
     };
 
-    const response = await this.client(this.config.apiBaseUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
+    try {
+      const response = await this.client(this.config.apiBaseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
 
-    if (!response.ok) {
-      const text = await response.text();
-      throw new ProviderError(text, response.status);
-    }
-
-    if (stream) {
-      // Handle streaming response
-      const reader = response.body?.getReader();
-      let result = '';
-
-      if (!reader) {
-        throw new ProviderError('Stream not available');
+      if (!response.ok) {
+        const text = await response.text();
+        throw new ProviderError(text, response.status);
       }
 
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+      if (stream) {
+        // Handle streaming response
+        const reader = response.body?.getReader();
+        let result = '';
 
-          const chunk = new TextDecoder().decode(value);
-          try {
-            const json = JSON.parse(chunk);
-            if (json.response) {
-              result += json.response;
-              process.stdout.write(json.response);
-            }
-          } catch (e) {
-            // Ignore parse errors for incomplete chunks
-          }
+        if (!reader) {
+          throw new ProviderError('Stream not available');
         }
-        return result;
-      } finally {
-        reader.releaseLock();
-      }
-    } else {
-      const data = await response.json() as OllamaResponse;
-      const content = data.response;
 
-      if (!content) {
-        throw new ProviderError('No completion choice available');
-      }
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-      return content;
+            const chunk = new TextDecoder().decode(value);
+            try {
+              const json = JSON.parse(chunk);
+              if (json.response) {
+                result += json.response;
+                process.stdout.write(json.response);
+              }
+            } catch (e) {
+              // Ignore parse errors for incomplete chunks
+            }
+          }
+          return result;
+        } finally {
+          reader.releaseLock();
+        }
+      } else {
+        const data = await response.json() as OllamaResponse;
+        const content = data.response;
+
+        if (!content) {
+          throw new ProviderError('No completion choice available');
+        }
+
+        return content;
+      }
+    } catch (error) {
+      // Check if the error is a connection refused error
+      if (error instanceof Error && 
+          (error.message.includes('ECONNREFUSED') || error.message.includes('fetch failed'))) {
+        throw new OllamaConnectionError();
+      }
+      throw error;
     }
+  }
+
+  getType(): ProviderType {
+    return 'ollama';
   }
 } 

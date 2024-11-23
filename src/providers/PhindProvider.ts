@@ -1,4 +1,4 @@
-import type { AIProvider } from './types';
+import type { AIProvider, ProviderType } from './types';
 import type { AIPrompt } from '../AIPrompt';
 import { ProviderError } from '../errors/AICError';
 
@@ -84,5 +84,9 @@ export class PhindProvider implements AIProvider {
       .map(line => this.parseLine(line))
       .filter((content): content is string => content !== undefined)
       .join('');
+  }
+
+  getType(): ProviderType {
+    return 'phind';
   }
 } 
