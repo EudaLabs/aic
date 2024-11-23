@@ -52,4 +52,11 @@ export class UnexpectedResponseError extends AICError {
     super(message);
     this.name = 'UnexpectedResponseError';
   }
+}
+
+export class OllamaConnectionError extends AICError {
+  constructor() {
+    super('Could not connect to Ollama. Make sure Ollama is running (ollama serve)');
+    this.name = 'OllamaConnectionError';
+  }
 } 
