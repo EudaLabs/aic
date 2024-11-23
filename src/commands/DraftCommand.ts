@@ -41,29 +41,35 @@ export class DraftCommand implements Command {
   ) {}
 
   async execute(provider: AICProvider, debug = false): Promise<void> {
-    const spinner = await createSpinner('Generating commit message...');
+    const spinner = await createSpinner('Analyzing changes');
     spinner.start();
 
     try {
       if (debug) {
+        spinner.stop();
         console.log('Debug: Starting draft command with entity:', this.gitEntity);
         console.log('Debug: Context:', this.context);
+        spinner.start();
       }
 
+      spinner.text = 'Generating commit message';
       let result = await provider.draft({
         gitEntity: this.gitEntity,
         context: this.context
       });
 
       // Clean up the message
+      spinner.text = 'Processing commit message';
       result = cleanCommitMessage(result);
 
       // Remove any trailing newlines before copying
       result = result.replace(/\n+$/, '');
 
       // Try to copy to clipboard
+      spinner.text = 'Copying to clipboard';
       await copyToClipboard(result);
-      spinner.succeed('Done - Commit message copied to clipboard');
+      
+      spinner.succeed('✨ Commit message copied to clipboard');
       console.log(`\n${result}`);
     } catch (error) {
       spinner.fail('Failed to generate commit message');
