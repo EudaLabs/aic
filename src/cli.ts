@@ -11,6 +11,7 @@ import { AICError } from './errors/AICError';
 import { BatchCommand } from './commands/BatchCommand';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { CategorizeCommand } from './commands/CategorizeCommand';
 
 // Read version from package.json
 const packageJson = JSON.parse(
@@ -148,6 +149,34 @@ export function createCli(): Command {
 
       try {
         await new BatchCommand(provider, globalOpts.debug).execute();
+      } catch (error) {
+        if (error instanceof AICError) {
+          console.error('Error:', error.message);
+        } else {
+          console.error('Unexpected error:', error);
+        }
+        process.exit(1);
+      }
+    });
+
+  program
+    .command('categorize')
+    .description('Show suggested categorization for current changes')
+    .option('-s, --staged', 'Use staged changes')
+    .action(async (options: { staged?: boolean }, cmd: Command) => {
+      const globalOpts = program.opts() as GlobalOptions;
+      const provider = AICProvider.create(
+        globalOpts.provider as ProviderType,
+        globalOpts.apiKey,
+        globalOpts.model
+      );
+
+      try {
+        const gitEntity = {
+          type: 'diff' as const,
+          data: new GitDiff(options.staged ?? false)
+        };
+        await new CategorizeCommand(gitEntity, globalOpts.debug).execute(provider);
       } catch (error) {
         if (error instanceof AICError) {
           console.error('Error:', error.message);

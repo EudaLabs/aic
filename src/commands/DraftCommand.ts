@@ -4,6 +4,7 @@ import type { AICProvider } from '../providers';
 import { createSpinner } from '../utils/spinner';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
+import { GIT_CONFIG, GIT_ENV } from '../utils/git-config';
 
 const execAsync = promisify(exec);
 
@@ -12,13 +13,28 @@ async function copyToClipboard(text: string): Promise<void> {
   try {
     if (platform === 'win32') {
       // Windows
-      await execAsync(`echo ${text.replace(/[<>]/g, '^$&')} | clip`);
+      await execAsync(`echo ${text.replace(/[<>]/g, '^$&')} | clip`, {
+        env: {
+          ...process.env,
+          ...GIT_ENV
+        }
+      });
     } else if (platform === 'darwin') {
       // macOS
-      await execAsync(`echo "${text.replace(/"/g, '\\"')}" | pbcopy`);
+      await execAsync(`echo "${text.replace(/"/g, '\\"')}" | pbcopy`, {
+        env: {
+          ...process.env,
+          ...GIT_ENV
+        }
+      });
     } else {
       // Linux (requires xclip)
-      await execAsync(`echo "${text.replace(/"/g, '\\"')}" | xclip -selection clipboard`);
+      await execAsync(`echo "${text.replace(/"/g, '\\"')}" | xclip -selection clipboard`, {
+        env: {
+          ...process.env,
+          ...GIT_ENV
+        }
+      });
     }
     return;
   } catch (error) {

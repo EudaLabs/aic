@@ -8,6 +8,8 @@ import { GitDiff } from '../gitEntity/GitDiff';
 import { DraftCommand } from './DraftCommand';
 import { AICError } from '../errors/AICError';
 import { setTimeout } from 'node:timers/promises';
+import { GIT_CONFIG, GIT_ENV } from '../utils/git-config';
+import { existsSync } from 'node:fs';
 
 export class BatchCommand implements Command {
   private processedFiles: Set<string> = new Set();
@@ -18,27 +20,51 @@ export class BatchCommand implements Command {
     private readonly debug = false
   ) {}
 
-  private getUnstagedChanges(): FileChange[] {
-    const output = execSync('git -c core.autocrlf=false -c core.safecrlf=false status --porcelain', { encoding: 'utf-8' });
-    return output
-      .split('\n')
-      .filter(line => line.length > 0)
-      .map(line => {
-        const status = line.substring(0, 2);
-        const path = line.substring(3);
-        
-        return {
-          path,
-          status: this.parseGitStatus(status)
-        };
+  private getActualChangedFiles(): FileChange[] {
+    try {
+      // Get list of changed files using git status
+      const command = `git ${GIT_CONFIG} status --porcelain`;
+      const output = execSync(command, {
+        encoding: 'utf-8',
+        env: {
+          ...process.env,
+          ...GIT_ENV
+        }
       });
+
+      return output
+        .split('\n')
+        .filter(line => line.length > 0)
+        .map(line => {
+          const status = line.substring(0, 2);
+          const path = line.substring(3);
+          
+          // Only include files that actually exist
+          if (!existsSync(path) && !status.includes('D')) { // Allow deleted files
+            if (this.debug) {
+              console.log(`Debug: Skipping non-existent file: ${path}`);
+            }
+            return null;
+          }
+
+          return {
+            path,
+            status: this.parseGitStatus(status.trim())
+          };
+        })
+        .filter((file): file is FileChange => file !== null);
+    } catch (error) {
+      if (this.debug) {
+        console.error('Debug: Error getting changed files:', error);
+      }
+      throw new Error('Failed to get list of changed files');
+    }
   }
 
   private parseGitStatus(status: string): 'modified' | 'added' | 'deleted' | 'renamed' {
-    const code = status.trim();
-    if (code.includes('A')) return 'added';
-    if (code.includes('D')) return 'deleted';
-    if (code.includes('R')) return 'renamed';
+    if (status.includes('A')) return 'added';
+    if (status.includes('D')) return 'deleted';
+    if (status.includes('R')) return 'renamed';
     return 'modified';
   }
 
@@ -124,25 +150,19 @@ export class BatchCommand implements Command {
     }));
   }
 
-  private async executeGitCommand(originalCommand: string, timeout = 5000): Promise<string> {
+  private async executeGitCommand(command: string, timeout = 5000): Promise<string> {
     try {
-      // Add --no-gpg-sign to commit commands to bypass GPG signing
-      const finalCommand = originalCommand.includes('commit -m')
-        ? originalCommand.replace('commit -m', 'commit --no-gpg-sign -m')
-        : originalCommand;
-
-      return execSync(finalCommand, {
+      return execSync(command, {
         encoding: 'utf-8',
         timeout,
         env: {
           ...process.env,
-          GIT_TERMINAL_PROMPT: '0', // Disable git credential prompts
-          GIT_ASKPASS: 'echo',      // Disable password prompts
+          ...GIT_ENV
         }
       });
     } catch (error) {
       if (this.debug) {
-        console.error(`Debug: Git command failed: ${originalCommand}`);
+        console.error(`Debug: Git command failed: ${command}`);
         console.error(error);
       }
       
@@ -167,24 +187,33 @@ export class BatchCommand implements Command {
     mainSpinner.start();
 
     try {
-      const changes = this.getUnstagedChanges();
-      if (changes.length === 0) {
+      const actualChanges = this.getActualChangedFiles();
+      
+      if (actualChanges.length === 0) {
         mainSpinner.fail('No changes found');
         return;
       }
 
       if (this.debug) {
         mainSpinner.stop();
-        console.log('\nDebug: Found changes:');
-        console.log(JSON.stringify(changes, null, 2));
+        console.log('\nDebug: Actual changed files:', actualChanges);
+        mainSpinner.start();
       }
 
-      mainSpinner.text = 'Categorizing changes with AI';
-      const groups = await this.categorizeChangesWithAI(changes);
+      mainSpinner.text = 'Categorizing changes';
+      const groups = await this.categorizeChangesWithAI(actualChanges);
       mainSpinner.succeed(`Found ${groups.length} groups of changes`);
 
       // Process each group
       for (const group of groups) {
+        // Skip empty groups
+        if (group.files.length === 0) {
+          if (this.debug) {
+            console.log(`\nDebug: Skipping ${group.category} - no files`);
+          }
+          continue;
+        }
+
         // Skip if all files in this group have been processed
         if (group.files.every(file => this.processedFiles.has(file.path))) {
           if (this.debug) {
@@ -193,38 +222,50 @@ export class BatchCommand implements Command {
           continue;
         }
 
-        const groupSpinner = await createSpinner(`Processing ${group.category}`);
+        const groupSpinner = await createSpinner(`Processing ${group.category}...`);
         groupSpinner.start();
 
         try {
-          // Only stage files that haven't been processed yet
+          // Get unprocessed files
           const unprocessedFiles = group.files.filter(file => !this.processedFiles.has(file.path));
-          
+
+          // First reset any staged changes
+          await this.executeGitCommand(`git ${GIT_CONFIG} reset`);
+
           // Stage files for this group
           for (const file of unprocessedFiles) {
             groupSpinner.text = `Staging ${file.path}`;
             await this.executeGitCommand(
-              `git -c core.autocrlf=false -c core.safecrlf=false add "${file.path}"`,
+              `git ${GIT_CONFIG} add "${file.path}"`,
               10000
             );
             this.processedFiles.add(file.path);
-            await setTimeout(100);
           }
 
-          groupSpinner.text = 'Generating commit message';
-          const gitEntity = {
-            type: 'diff' as const,
-            data: new GitDiff(true)
-          };
+          // Verify we have staged changes
+          const stagedDiff = await this.executeGitCommand(`git ${GIT_CONFIG} diff --staged`);
+          if (!stagedDiff) {
+            if (this.debug) {
+              console.log(`\nDebug: No staged changes for ${group.category}, skipping`);
+            }
+            groupSpinner.stop();
+            continue;
+          }
 
+          // Get commit message for staged changes
+          groupSpinner.text = 'Generating commit message';
           const result = await this.provider.draft({
-            gitEntity,
+            gitEntity: {
+              type: 'diff' as const,
+              data: new GitDiff(true)
+            },
             context: `Category: ${group.category}\nFiles: ${unprocessedFiles.map(f => f.path).join(', ')}`
           });
 
+          // Create commit
           groupSpinner.text = 'Creating commit';
           await this.executeGitCommand(
-            `git -c core.autocrlf=false -c core.safecrlf=false commit --no-gpg-sign -m "${result.replace(/"/g, '\\"')}"`,
+            `git ${GIT_CONFIG} commit --no-gpg-sign -m "${result.replace(/"/g, '\\"')}"`,
             15000
           );
           

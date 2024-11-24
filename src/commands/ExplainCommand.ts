@@ -18,7 +18,7 @@ export class ExplainCommand implements Command {
       await printWithMdcat(`\`query\`: ${this.query}`);
     }
 
-    const spinnerText = this.query ? 'Generating answer...' : 'Generating summary...';
+    const spinnerText = this.query ? 'Generating answer' : 'Generating summary';
     const spinner = await createSpinner(spinnerText);
     spinner.start();
 
@@ -26,9 +26,9 @@ export class ExplainCommand implements Command {
       const result = await provider.explain({
         gitEntity: this.gitEntity,
         query: this.query
-      }, false);
+      }, true);
 
-      spinner.succeed('Done');
+      spinner.succeed('Analysis complete');
       console.log(`\n${result}`);
     } catch (error) {
       spinner.fail('Failed to generate explanation');
