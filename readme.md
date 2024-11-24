@@ -12,6 +12,7 @@ AIC is a powerful CLI tool that leverages AI to help you create meaningful git c
 - 🚀 High-Performance Local Processing via Ollama
 - ✨ Automatic Change Categorization and Batch Commits
 - 📋 Automatic Clipboard Support
+- 🗂️ Smart File Categorization
 
 ## Installation
 
@@ -62,6 +63,16 @@ aic batch
 
 # With specific provider
 aic --provider ollama --model qwen2.5-coder:7b batch
+```
+
+### View File Categories
+
+```bash
+# Show suggested categorization for current changes
+aic categorize
+
+# Show categorization for staged changes
+aic categorize --staged
 ```
 
 ### Browse and Explain Commits
@@ -124,14 +135,6 @@ aic --debug batch
 
 ## Features in Detail
 
-### Batch Commit
-The `batch` command automatically:
-- Analyzes all changes in your repository
-- Groups related files together
-- Generates appropriate commit messages for each group
-- Creates separate commits with proper conventional commit format
-- Handles complex changes intelligently
-
 ### Smart Categorization
 Files are automatically grouped by:
 - API endpoints
@@ -140,7 +143,23 @@ Files are automatically grouped by:
 - Type definitions
 - Configuration files
 - Documentation
+- Utilities
 - And more...
+
+### Batch Commit
+The `batch` command automatically:
+- Analyzes all changes in your repository
+- Groups related files together
+- Generates appropriate commit messages for each group
+- Creates separate commits with proper conventional commit format
+- Handles complex changes intelligently
+
+### File Categorization
+The `categorize` command:
+- Shows logical grouping of changed files
+- Helps understand code organization
+- Suggests file categories based on purpose
+- Supports both staged and unstaged changes
 
 ## Technical Stack
 
